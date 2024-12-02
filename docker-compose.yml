@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16.4
+    container_name: postgres-db
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql  # Cambia a montar directamente el archivo SQL
+      - db_data:/var/lib/postgresql/data
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: alumnos
+    networks:
+      - my_bridge
+
+  app:
+    build:
+      context: ./alumnos
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    restart: always
+    expose:
+      - "8080"  # Exponer solo internamente para el proxy
+    networks:
+      - my_bridge
+
+  proxy:
+    image: nginx:latest
+    depends_on:
+      - app
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"  # Exponer el puerto 80 al exterior para el acceso HTTP
+    restart: always
+    networks:
+      - my_bridge
+
+volumes:
+  db_data:
+
+networks:
+  my_bridge:
+    driver: bridge
