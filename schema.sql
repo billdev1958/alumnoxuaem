@@ -47,9 +47,12 @@ CREATE TABLE IF NOT EXISTS alumn (
     lastname1 VARCHAR(255) NOT NULL, 
     lastname2 VARCHAR(255),
     course_id INTEGER NOT NULL,
+    current_semester INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
 
 CREATE TABLE IF NOT EXISTS teacher (
     id SERIAL PRIMARY KEY,
@@ -81,3 +84,7 @@ FOREIGN KEY (alumn_id) REFERENCES alumn(id) ON DELETE CASCADE;
 ALTER TABLE partial_grades
 ADD CONSTRAINT fk_partial_grades_semester_course
 FOREIGN KEY (semester_course_id) REFERENCES semester_course(id) ON DELETE CASCADE;
+
+ALTER TABLE alumn 
+ADD CONSTRAINT fk_current_semester_alumn_id
+FOREIGN KEY (current_semester) REFERENCES cat_semesters(id);
