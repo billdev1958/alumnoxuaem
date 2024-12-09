@@ -379,7 +379,15 @@ func (s *PgxStorage) GetSubjectsByCourse(ctx context.Context, courseID int) ([]m
 
 func (s *PgxStorage) GetStudents(ctx context.Context) ([]models.Alumno, error) {
 	query := `
-		SELECT id, name, lastname1, lastname2, course_id
+		SELECT 
+			id, 
+			name, 
+			lastname1, 
+			lastname2, 
+			course_id, 
+			current_semester, 
+			created_at, 
+			updated_at
 		FROM alumn
 	`
 
@@ -392,7 +400,16 @@ func (s *PgxStorage) GetStudents(ctx context.Context) ([]models.Alumno, error) {
 	var alumnos []models.Alumno
 	for rows.Next() {
 		var alumno models.Alumno
-		if err := rows.Scan(&alumno.ID, &alumno.Name, &alumno.Lastname1, &alumno.Lastname2, &alumno.CourseID); err != nil {
+		if err := rows.Scan(
+			&alumno.ID,
+			&alumno.Name,
+			&alumno.Lastname1,
+			&alumno.Lastname2,
+			&alumno.CourseID,
+			&alumno.CurrentCourseID,
+			&alumno.CreatedAt,
+			&alumno.UpdatedAt,
+		); err != nil {
 			return nil, fmt.Errorf("error al escanear alumnos: %w", err)
 		}
 		alumnos = append(alumnos, alumno)
