@@ -42,6 +42,18 @@ CREATE TABLE IF NOT EXISTS partial_grades (
     UNIQUE (semester_course_id, partial_number)
 );
 
+CREATE TABLE IF NOT EXISTS semester_grades (
+    id SERIAL PRIMARY KEY,
+    alumn_id INTEGER NOT NULL,
+    semester_id INTEGER NOT NULL,
+    final_semester_grade DOUBLE PRECISION, -- Promedio de las calificaciones finales de materias
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (alumn_id, semester_id),
+    FOREIGN KEY (alumn_id) REFERENCES alumn(id) ON DELETE CASCADE,
+    FOREIGN KEY (semester_id) REFERENCES cat_semesters(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS alumn (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -113,3 +125,50 @@ CREATE TRIGGER calculate_final_grade
 AFTER INSERT OR UPDATE ON partial_grades
 FOR EACH ROW
 EXECUTE FUNCTION update_final_grade();
+
+CREATE OR REPLACE FUNCTION update_final_semester_grade()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Verifica si todas las materias del semestre tienen una `final_grade`
+    IF (SELECT COUNT(*) 
+        FROM semester_course
+        WHERE semester_id = NEW.semester_id 
+          AND alumn_id = NEW.alumn_id 
+          AND final_grade IS NULL) = 0 THEN
+        
+        -- Calcula el promedio de `final_grade` de todas las materias del semestre
+        UPDATE semester_grades
+        SET final_semester_grade = (
+            SELECT AVG(final_grade)
+            FROM semester_course
+            WHERE semester_id = NEW.semester_id 
+              AND alumn_id = NEW.alumn_id
+        ),
+        updated_at = CURRENT_TIMESTAMP
+        WHERE semester_id = NEW.semester_id 
+          AND alumn_id = NEW.alumn_id;
+
+        -- Si no existe un registro en `semester_grades`, lo inserta
+        IF NOT FOUND THEN
+            INSERT INTO semester_grades (alumn_id, semester_id, final_semester_grade, created_at, updated_at)
+            VALUES (
+                NEW.alumn_id,
+                NEW.semester_id,
+                (SELECT AVG(final_grade) 
+                 FROM semester_course 
+                 WHERE semester_id = NEW.semester_id 
+                   AND alumn_id = NEW.alumn_id),
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+            );
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER calculate_final_semester_grade
+AFTER UPDATE OF final_grade ON semester_course
+FOR EACH ROW
+EXECUTE FUNCTION update_final_semester_grade();

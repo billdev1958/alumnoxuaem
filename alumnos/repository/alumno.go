@@ -115,6 +115,25 @@ func (s *PgxStorage) GetSemesterCoursesByAlumnId(ctx context.Context, alumnID in
 }
 
 func (s *PgxStorage) RegistrarEnSemestreConMaterias(ctx context.Context, alumnoID, semesterID int, subjectIDs []int) error {
+	// Validar si los semestres anteriores han sido completados
+	completionQuery := `
+		SELECT COUNT(*)
+		FROM cat_semesters cs
+		LEFT JOIN semester_grades sg ON cs.id = sg.semester_id AND sg.alumn_id = $1
+		WHERE cs.id < $2 AND (sg.final_semester_grade IS NULL OR sg.final_semester_grade = 0);
+	`
+
+	var incompleteSemesters int
+	err := s.DbPool.QueryRow(ctx, completionQuery, alumnoID, semesterID).Scan(&incompleteSemesters)
+	if err != nil {
+		return fmt.Errorf("error al verificar semestres incompletos: %w", err)
+	}
+
+	if incompleteSemesters > 0 {
+		return fmt.Errorf("no se puede registrar el nuevo semestre porque hay semestres anteriores incompletos")
+	}
+
+	// Iniciar la transacción para registrar las materias
 	tx, err := s.DbPool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("error al iniciar transacción: %w", err)
@@ -133,6 +152,7 @@ func (s *PgxStorage) RegistrarEnSemestreConMaterias(ctx context.Context, alumnoI
 		}
 	}
 
+	// Confirmar la transacción
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("error al confirmar transacción: %w", err)
 	}
