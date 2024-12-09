@@ -408,3 +408,12 @@ func (s *PgxStorage) GetPendingGradesForCurrentSemester(ctx context.Context, alu
 
 	return pendingGrades, nil
 }
+
+func (s *PgxStorage) GetAlumnIDBySemesterCourseID(ctx context.Context, semesterCourseID int, alumnID *int) error {
+	query := `
+		SELECT sc.alumn_id
+		FROM semester_course sc
+		WHERE sc.id = $1;
+	`
+	return s.DbPool.QueryRow(ctx, query, semesterCourseID).Scan(alumnID)
+}

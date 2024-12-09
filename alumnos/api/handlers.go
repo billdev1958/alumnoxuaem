@@ -104,8 +104,16 @@ func (api *API) RegistrarCalificacionParcial(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Llama al método del repositorio
-	err := api.Repo.RegistrarCalificacionParcial(r.Context(), input.SemesterCourseID, input.PartialNumber, input.Grade)
+	// Validar que el `semester_course_id` existe
+	var alumnID int
+	err := api.Repo.GetAlumnIDBySemesterCourseID(r.Context(), input.SemesterCourseID, &alumnID)
+	if err != nil {
+		http.Error(w, "El ID de curso-semestre no pertenece a un alumno válido", http.StatusBadRequest)
+		return
+	}
+
+	// Registrar calificación parcial
+	err = api.Repo.RegistrarCalificacionParcial(r.Context(), input.SemesterCourseID, input.PartialNumber, input.Grade)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error al registrar calificación parcial: %v", err), http.StatusInternalServerError)
 		return
