@@ -1,3 +1,6 @@
+
+
+
 CREATE TABLE IF NOT EXISTS cat_courses (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -21,6 +24,18 @@ CREATE TABLE IF NOT EXISTS cat_semesters (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS alumn (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    lastname1 VARCHAR(255) NOT NULL, 
+    lastname2 VARCHAR(255),
+    course_id INTEGER NOT NULL,
+    current_semester INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 CREATE TABLE IF NOT EXISTS semester_course (
     id SERIAL PRIMARY KEY,
@@ -54,16 +69,6 @@ CREATE TABLE IF NOT EXISTS semester_grades (
     FOREIGN KEY (semester_id) REFERENCES cat_semesters(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS alumn (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    lastname1 VARCHAR(255) NOT NULL, 
-    lastname2 VARCHAR(255),
-    course_id INTEGER NOT NULL,
-    current_semester INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 
 
