@@ -4,7 +4,6 @@ import (
 	"alumnos/models"
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -17,19 +16,44 @@ func NewPgxStorage(dbPool *pgxpool.Pool) *PgxStorage {
 	return &PgxStorage{DbPool: dbPool}
 }
 
-// RegistrarAlumnoConCurso inserta un nuevo alumno y asigna un course_id.
-func (s *PgxStorage) RegistrarAlumnoConCurso(ctx context.Context, alumno models.Alumno) (int, error) {
-	var alumnoID int
+func (s *PgxStorage) RegisterAlumn(ctx context.Context, request models.RegisterAlumnRequest) (int, error) {
+	tx, err := s.DbPool.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("error al iniciar transacción: %w", err)
+	}
+	defer tx.Rollback(ctx)
 
-	query := `
-		INSERT INTO alumn (name, lastname1, lastname2, course_id)
-		VALUES ($1, $2, $3, $4)
+	// Insertar al alumno en la tabla `alumn`
+	var alumnoID int
+	insertAlumnQuery := `
+		INSERT INTO alumn (name, lastname1, lastname2, course_id, current_semester)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id;
 	`
 
-	err := s.DbPool.QueryRow(ctx, query, alumno.Name, alumno.Lastname1, alumno.Lastname2, alumno.CourseID, time.Now()).Scan(&alumnoID)
+	err = tx.QueryRow(ctx, insertAlumnQuery,
+		request.Name, request.Lastname1, request.Lastname2,
+		request.CourseID, request.CurrentCourseID).Scan(&alumnoID)
 	if err != nil {
-		return 0, fmt.Errorf("error al registrar alumno con curso: %w", err)
+		return 0, fmt.Errorf("error al registrar alumno: %w", err)
+	}
+
+	// Asignar materias del curso al alumno en el semestre actual
+	insertSubjectQuery := `
+		INSERT INTO semester_course (alumn_id, semester_id, subject_id)
+		VALUES ($1, $2, $3);
+	`
+
+	for _, subject := range request.Subjects {
+		_, err = tx.Exec(ctx, insertSubjectQuery, alumnoID, request.CurrentCourseID, subject.ID)
+		if err != nil {
+			return 0, fmt.Errorf("error al asignar materia (ID: %d): %w", subject.ID, err)
+		}
+	}
+
+	// Confirmar la transacción
+	if err := tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("error al confirmar transacción: %w", err)
 	}
 
 	return alumnoID, nil

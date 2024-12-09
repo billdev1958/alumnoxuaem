@@ -17,25 +17,31 @@ func NewAPI(repo *repository.PgxStorage) *API {
 }
 
 func (api *API) RegistrarAlumno(w http.ResponseWriter, r *http.Request) {
-	var alumno models.Alumno
-
-	if err := json.NewDecoder(r.Body).Decode(&alumno); err != nil {
+	// Decodificar el cuerpo de la solicitud en el modelo RegisterAlumnRequest
+	var request models.RegisterAlumnRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, fmt.Sprintf("Error al decodificar la solicitud: %v", err), http.StatusBadRequest)
 		return
 	}
 
-	// Llama al método de tu repositorio usando `api.Repo`
-	alumnoID, err := api.Repo.RegistrarAlumnoConCurso(r.Context(), alumno)
+	if request.Name == "" || request.Lastname1 == "" || request.CourseID == 0 || request.CurrentCourseID == 0 {
+		http.Error(w, "Faltan campos requeridos (name, lastname1, course_id, current_course_id)", http.StatusBadRequest)
+		return
+	}
+
+	alumnoID, err := api.Repo.RegisterAlumn(r.Context(), request)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error al registrar alumno: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":   "Alumno registrado exitosamente",
 		"alumno_id": alumnoID,
-	})
+	}); err != nil {
+		http.Error(w, fmt.Sprintf("Error al codificar la respuesta: %v", err), http.StatusInternalServerError)
+	}
 }
 
 func (api *API) RegistrarEnSemestre(w http.ResponseWriter, r *http.Request) {
