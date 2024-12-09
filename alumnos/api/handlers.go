@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 type API struct {
@@ -246,4 +247,27 @@ func (api *API) GetPendingGradesHandler(w http.ResponseWriter, r *http.Request) 
 		"message":        "Calificaciones pendientes obtenidas exitosamente",
 		"pending_grades": pendingGrades,
 	})
+}
+
+func (api *API) GetSemesterCoursesByAlumnId(w http.ResponseWriter, r *http.Request) {
+	alumnIDStr := r.URL.Query().Get("alumn_id")
+	if alumnIDStr == "" {
+		http.Error(w, "alumn_id es requerido", http.StatusBadRequest)
+		return
+	}
+
+	alumnID, err := strconv.Atoi(alumnIDStr)
+	if err != nil {
+		http.Error(w, "alumn_id inválido", http.StatusBadRequest)
+		return
+	}
+
+	courses, err := api.Repo.GetSemesterCoursesByAlumnId(r.Context(), alumnID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al obtener courses: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(courses)
 }

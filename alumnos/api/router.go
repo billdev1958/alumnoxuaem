@@ -23,4 +23,6 @@ func RegisterRoutes(mux *http.ServeMux, apiInstance *API) {
 
 	mux.Handle("GET /v1/students", http.HandlerFunc(apiInstance.GetStudents))
 
+	mux.Handle("GET /v1/semester-courses", http.HandlerFunc(apiInstance.GetSemesterCoursesByAlumnId))
+
 }

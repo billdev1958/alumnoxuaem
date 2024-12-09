@@ -59,6 +59,59 @@ func (s *PgxStorage) RegisterAlumn(ctx context.Context, request models.RegisterA
 	return alumnoID, nil
 }
 
+func (s *PgxStorage) GetSemesterCoursesByAlumnId(ctx context.Context, alumnID int) ([]models.SemesterCourse, error) {
+	query := `
+		SELECT sc.id, sc.alumn_id, sc.semester_id, sc.subject_id, sc.final_grade, sc.created_at, sc.updated_at
+		FROM semester_course sc
+		JOIN alumn a ON sc.alumn_id = a.id
+		WHERE a.id = $1 AND sc.semester_id = a.current_semester;
+	`
+
+	rows, err := s.DbPool.Query(ctx, query, alumnID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener semester_course: %w", err)
+	}
+	defer rows.Close()
+
+	var courses []models.SemesterCourse
+	for rows.Next() {
+		var c models.SemesterCourse
+		err := rows.Scan(&c.ID, &c.AlumnID, &c.SemesterID, &c.SubjectID, &c.FinalGrade, &c.CreatedAt, &c.UpdatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error al escanear semester_course: %w", err)
+		}
+		courses = append(courses, c)
+	}
+
+	// Opcional: Cargar partial_grades para cada semester_course
+	for i, course := range courses {
+		pgQuery := `
+			SELECT id, semester_course_id, partial_number, grade, created_at, updated_at
+			FROM partial_grades
+			WHERE semester_course_id = $1;
+		`
+		pgRows, err := s.DbPool.Query(ctx, pgQuery, course.ID)
+		if err != nil {
+			return nil, fmt.Errorf("error al obtener partial_grades: %w", err)
+		}
+
+		var partials []models.PartialGrade
+		for pgRows.Next() {
+			var pg models.PartialGrade
+			if err := pgRows.Scan(&pg.ID, &pg.SemesterCourseID, &pg.PartialNumber, &pg.Grade, &pg.CreatedAt, &pg.UpdatedAt); err != nil {
+				pgRows.Close()
+				return nil, fmt.Errorf("error al escanear partial_grades: %w", err)
+			}
+			partials = append(partials, pg)
+		}
+		pgRows.Close()
+
+		courses[i].PartialGrades = partials
+	}
+
+	return courses, nil
+}
+
 func (s *PgxStorage) RegistrarEnSemestreConMaterias(ctx context.Context, alumnoID, semesterID int, subjectIDs []int) error {
 	tx, err := s.DbPool.Begin(ctx)
 	if err != nil {
