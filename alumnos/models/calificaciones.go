@@ -38,13 +38,14 @@ type PendingGrade struct {
 }
 
 type SemesterCourse struct {
-	ID         int       `json:"id"`
-	AlumnID    int       `json:"alumn_id"`
-	SemesterID int       `json:"semester_id"`
-	SubjectID  int       `json:"subject_id"`
-	FinalGrade *float64  `json:"final_grade,omitempty"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID          int       `json:"id"`
+	AlumnID     int       `json:"alumn_id"`
+	SemesterID  int       `json:"semester_id"`
+	SubjectID   int       `json:"subject_id"`
+	SubjectName string    `json:"subject_name"`
+	FinalGrade  *float64  `json:"final_grade,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 	// Si quieres incluir las calificaciones parciales dentro del objeto:
 	PartialGrades []PartialGrade `json:"partial_grades,omitempty"`
 }

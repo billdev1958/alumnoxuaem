@@ -61,8 +61,9 @@ func (s *PgxStorage) RegisterAlumn(ctx context.Context, request models.RegisterA
 
 func (s *PgxStorage) GetSemesterCoursesByAlumnId(ctx context.Context, alumnID int) ([]models.SemesterCourse, error) {
 	query := `
-		SELECT sc.id, sc.alumn_id, sc.semester_id, sc.subject_id, sc.final_grade, sc.created_at, sc.updated_at
+		SELECT sc.id, sc.alumn_id, sc.semester_id, sc.subject_id, ah.name AS subject_name, sc.final_grade, sc.created_at, sc.updated_at
 		FROM semester_course sc
+		LEFT JOIN academyc_history ah ON sc.subject_id = ah.id
 		JOIN alumn a ON sc.alumn_id = a.id
 		WHERE a.id = $1 AND sc.semester_id = a.current_semester;
 	`
@@ -76,7 +77,7 @@ func (s *PgxStorage) GetSemesterCoursesByAlumnId(ctx context.Context, alumnID in
 	var courses []models.SemesterCourse
 	for rows.Next() {
 		var c models.SemesterCourse
-		err := rows.Scan(&c.ID, &c.AlumnID, &c.SemesterID, &c.SubjectID, &c.FinalGrade, &c.CreatedAt, &c.UpdatedAt)
+		err := rows.Scan(&c.ID, &c.AlumnID, &c.SemesterID, &c.SubjectID, &c.SubjectName, &c.FinalGrade, &c.CreatedAt, &c.UpdatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("error al escanear semester_course: %w", err)
 		}
