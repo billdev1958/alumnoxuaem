@@ -347,3 +347,26 @@ func (s *PgxStorage) GetStudents(ctx context.Context) ([]models.Alumno, error) {
 
 	return alumnos, nil
 }
+
+func (s *PgxStorage) SeedCatSemesters(ctx context.Context) error {
+	query := `
+		INSERT INTO cat_semesters (id, name)
+		VALUES 
+		(1, 'Primer Semestre'),
+		(2, 'Segundo Semestre'),
+		(3, 'Tercer Semestre'),
+		(4, 'Cuarto Semestre'),
+		(5, 'Quinto Semestre'),
+		(6, 'Sexto Semestre'),
+		(7, 'Séptimo Semestre'),
+		(8, 'Octavo Semestre')
+		ON CONFLICT (id) DO NOTHING;
+	`
+
+	_, err := s.DbPool.Exec(ctx, query)
+	if err != nil {
+		return fmt.Errorf("error al insertar datos en cat_semesters: %w", err)
+	}
+
+	return nil
+}
