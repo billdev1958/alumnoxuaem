@@ -8,14 +8,17 @@ type CalificacionParcial struct {
 }
 
 type MateriaCalificaciones struct {
-	SubjectID int                   `json:"subject_id"`
-	Parciales []CalificacionParcial `json:"parciales"`
-	Promedio  float64               `json:"promedio"`
+	SubjectID   int                   `json:"subject_id"`
+	SubjectName string                `json:"subject_name"`
+	Parciales   []CalificacionParcial `json:"parciales"`
+	Promedio    float64               `json:"promedio"` // Promedio de la materia
 }
 
 type SemestreCalificaciones struct {
-	SemesterID int                     `json:"semester_id"`
-	Materias   []MateriaCalificaciones `json:"materias"`
+	SemesterID   int                     `json:"semester_id"`
+	SemesterName string                  `json:"semester_name"`
+	Materias     []MateriaCalificaciones `json:"materias"`
+	Promedio     float64                 `json:"promedio"` // Promedio del semestre
 }
 
 type Course struct {

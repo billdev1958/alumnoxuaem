@@ -191,9 +191,11 @@ func (s *PgxStorage) RegistrarCalificacionParcial(ctx context.Context, semesterC
 
 func (s *PgxStorage) GenerarCalificacionesAgrupadasPorSemestre(ctx context.Context, alumnoID int) ([]models.SemestreCalificaciones, float64, error) {
 	query := `
-		SELECT sc.semester_id, sc.subject_id, pg.partial_number, pg.grade
+		SELECT sc.semester_id, cs.name AS semester_name, sc.subject_id, ah.name AS subject_name, pg.partial_number, pg.grade
 		FROM semester_course sc
 		JOIN partial_grades pg ON sc.id = pg.semester_course_id
+		LEFT JOIN cat_semesters cs ON sc.semester_id = cs.id
+		LEFT JOIN academyc_history ah ON sc.subject_id = ah.id
 		WHERE sc.alumn_id = $1
 		ORDER BY sc.semester_id, sc.subject_id, pg.partial_number;
 	`
@@ -213,17 +215,19 @@ func (s *PgxStorage) GenerarCalificacionesAgrupadasPorSemestre(ctx context.Conte
 
 	for rows.Next() {
 		var semesterID, subjectID, partialNumber int
+		var semesterName, subjectName string
 		var grade float64
 
-		if err := rows.Scan(&semesterID, &subjectID, &partialNumber, &grade); err != nil {
+		if err := rows.Scan(&semesterID, &semesterName, &subjectID, &subjectName, &partialNumber, &grade); err != nil {
 			return nil, 0, fmt.Errorf("error al procesar filas: %w", err)
 		}
 
 		// Verificar si el semestre ya fue agregado
 		if _, exists := calificacionesPorSemestre[semesterID]; !exists {
 			calificacionesPorSemestre[semesterID] = &models.SemestreCalificaciones{
-				SemesterID: semesterID,
-				Materias:   []models.MateriaCalificaciones{},
+				SemesterID:   semesterID,
+				SemesterName: semesterName,
+				Materias:     []models.MateriaCalificaciones{},
 			}
 		}
 
@@ -239,9 +243,10 @@ func (s *PgxStorage) GenerarCalificacionesAgrupadasPorSemestre(ctx context.Conte
 		if materia == nil {
 			// Agregar nueva materia si no existe
 			materia = &models.MateriaCalificaciones{
-				SubjectID: subjectID,
-				Parciales: []models.CalificacionParcial{},
-				Promedio:  0,
+				SubjectID:   subjectID,
+				SubjectName: subjectName,
+				Parciales:   []models.CalificacionParcial{},
+				Promedio:    0,
 			}
 			calificacionesPorSemestre[semesterID].Materias = append(calificacionesPorSemestre[semesterID].Materias, *materia)
 		}
@@ -259,6 +264,9 @@ func (s *PgxStorage) GenerarCalificacionesAgrupadasPorSemestre(ctx context.Conte
 
 	// Calcular promedios por materia y semestre
 	for _, semestre := range calificacionesPorSemestre {
+		var totalSemestre float64
+		var numMaterias int
+
 		for i, materia := range semestre.Materias {
 			totalMateria := 0.0
 			for _, parcial := range materia.Parciales {
@@ -266,7 +274,13 @@ func (s *PgxStorage) GenerarCalificacionesAgrupadasPorSemestre(ctx context.Conte
 			}
 			materia.Promedio = totalMateria / float64(len(materia.Parciales))
 			semestre.Materias[i] = materia
+
+			totalSemestre += materia.Promedio
+			numMaterias++
 		}
+
+		// Calcular promedio del semestre
+		semestre.Promedio = totalSemestre / float64(numMaterias)
 		semestres = append(semestres, *semestre)
 	}
 
