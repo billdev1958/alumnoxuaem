@@ -370,3 +370,41 @@ func (s *PgxStorage) SeedCatSemesters(ctx context.Context) error {
 
 	return nil
 }
+
+func (s *PgxStorage) GetPendingGradesForCurrentSemester(ctx context.Context, alumnID int) ([]models.PendingGrade, error) {
+	query := `
+		SELECT 
+			sc.subject_id,
+			ah.name AS subject_name,
+			sc.semester_id,
+			pg.partial_number
+		FROM semester_course sc
+		LEFT JOIN partial_grades pg ON sc.id = pg.semester_course_id
+		JOIN academyc_history ah ON sc.subject_id = ah.id
+		WHERE sc.alumn_id = $1
+		  AND sc.semester_id = (
+			  SELECT current_semester
+			  FROM alumn
+			  WHERE id = $1
+		  )
+		  AND pg.grade IS NULL
+		ORDER BY sc.semester_id, sc.subject_id, pg.partial_number;
+	`
+
+	rows, err := s.DbPool.Query(ctx, query, alumnID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener calificaciones pendientes: %w", err)
+	}
+	defer rows.Close()
+
+	var pendingGrades []models.PendingGrade
+	for rows.Next() {
+		var pendingGrade models.PendingGrade
+		if err := rows.Scan(&pendingGrade.SubjectID, &pendingGrade.SubjectName, &pendingGrade.SemesterID, &pendingGrade.PartialNumber); err != nil {
+			return nil, fmt.Errorf("error al procesar filas de calificaciones pendientes: %w", err)
+		}
+		pendingGrades = append(pendingGrades, pendingGrade)
+	}
+
+	return pendingGrades, nil
+}

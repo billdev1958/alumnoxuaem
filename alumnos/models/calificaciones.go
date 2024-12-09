@@ -27,3 +27,10 @@ type Subject struct {
 	Name  string `json:"name"`
 	Coins int    `json:"coins"`
 }
+
+type PendingGrade struct {
+	SubjectID     int    `json:"subject_id"`
+	SubjectName   string `json:"subject_name"`
+	SemesterID    int    `json:"semester_id"`
+	PartialNumber int    `json:"partial_number"`
+}

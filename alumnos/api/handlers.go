@@ -206,3 +206,36 @@ func (api *API) GetStudents(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(alumnos)
 }
+
+func (api *API) GetPendingGradesHandler(w http.ResponseWriter, r *http.Request) {
+	// Decodificar el cuerpo de la solicitud
+	var input struct {
+		AlumnID int `json:"alumn_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, fmt.Sprintf("Error al decodificar la solicitud: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Validar que el AlumnID sea válido
+	if input.AlumnID <= 0 {
+		http.Error(w, "El campo 'alumn_id' debe ser un número positivo", http.StatusBadRequest)
+		return
+	}
+
+	// Obtener calificaciones pendientes desde el repositorio
+	pendingGrades, err := api.Repo.GetPendingGradesForCurrentSemester(r.Context(), input.AlumnID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al obtener calificaciones pendientes: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Responder con JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":        "Calificaciones pendientes obtenidas exitosamente",
+		"pending_grades": pendingGrades,
+	})
+}

@@ -9,6 +9,8 @@ func RegisterRoutes(mux *http.ServeMux, apiInstance *API) {
 	// Rutas para semestres y materias
 	mux.Handle("POST /v1/semestres", http.HandlerFunc(apiInstance.RegistrarEnSemestre))
 
+	mux.Handle("POST /v1/alumnos/pending-grades", http.HandlerFunc(apiInstance.GetPendingGradesHandler))
+
 	// Rutas para calificaciones parciales
 	mux.Handle("POST /v1/calificaciones/parcial", http.HandlerFunc(apiInstance.RegistrarCalificacionParcial))
 

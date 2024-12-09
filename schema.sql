@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS partial_grades (
     partial_number INTEGER NOT NULL,
     grade DOUBLE PRECISION NOT NULL, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (semester_course_id, partial_number)
 );
 
 CREATE TABLE IF NOT EXISTS alumn (
