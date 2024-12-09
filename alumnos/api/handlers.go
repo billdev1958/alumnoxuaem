@@ -3,8 +3,10 @@ package api
 import (
 	"alumnos/models"
 	"alumnos/repository"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -17,24 +19,33 @@ func NewAPI(repo *repository.PgxStorage) *API {
 }
 
 func (api *API) RegistrarAlumno(w http.ResponseWriter, r *http.Request) {
-	// Decodificar el cuerpo de la solicitud en el modelo RegisterAlumnRequest
+	// Leer y registrar el cuerpo recibido
+	body, _ := io.ReadAll(r.Body)
+	fmt.Println("Cuerpo recibido:", string(body))
+
+	// Decodificar el JSON
 	var request models.RegisterAlumnRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(body)).Decode(&request); err != nil {
 		http.Error(w, fmt.Sprintf("Error al decodificar la solicitud: %v", err), http.StatusBadRequest)
 		return
 	}
+	// Log del contenido decodificado
+	fmt.Printf("Solicitud decodificada: %+v\n", request)
 
+	// Validar campos requeridos
 	if request.Name == "" || request.Lastname1 == "" || request.CourseID == 0 || request.CurrentCourseID == 0 {
 		http.Error(w, "Faltan campos requeridos (name, lastname1, course_id, current_course_id)", http.StatusBadRequest)
 		return
 	}
 
+	// Registrar alumno
 	alumnoID, err := api.Repo.RegisterAlumn(r.Context(), request)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error al registrar alumno: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	// Responder con éxito
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":   "Alumno registrado exitosamente",
