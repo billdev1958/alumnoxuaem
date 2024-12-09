@@ -46,6 +46,12 @@ func main() {
 	}
 	fmt.Println("Seed de academyc_history ejecutado exitosamente.")
 
+	if err := repo.SeedCatSemesters(context.Background()); err != nil {
+		fmt.Printf("Error al ejecutar el seed: %v\n", err)
+		return
+	}
+	fmt.Println("Seed de cat_semesters ejecutado exitosamente.")
+
 	// Iniciar servidor
 	port := "8080"
 	fmt.Printf("Servidor escuchando en :%s\n", port)
