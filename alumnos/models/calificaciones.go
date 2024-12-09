@@ -41,7 +41,7 @@ type SemesterCourse struct {
 	ID           int       `json:"id"`
 	AlumnID      int       `json:"alumn_id"`
 	SemesterID   int       `json:"semester_id"`
-	SemesterName int       `json:"semester_name"`
+	SemesterName string    `json:"semester_name"`
 	SubjectID    int       `json:"subject_id"`
 	SubjectName  string    `json:"subject_name"`
 	FinalGrade   *float64  `json:"final_grade,omitempty"`
