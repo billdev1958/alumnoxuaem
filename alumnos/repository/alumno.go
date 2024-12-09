@@ -140,6 +140,7 @@ func (s *PgxStorage) RegistrarEnSemestreConMaterias(ctx context.Context, alumnoI
 	}
 	defer tx.Rollback(ctx)
 
+	// Registrar materias en el semestre
 	query := `
 		INSERT INTO semester_course (alumn_id, semester_id, subject_id)
 		VALUES ($1, $2, $3);
@@ -150,6 +151,18 @@ func (s *PgxStorage) RegistrarEnSemestreConMaterias(ctx context.Context, alumnoI
 		if err != nil {
 			return fmt.Errorf("error al registrar materia %d: %w", subjectID, err)
 		}
+	}
+
+	// Actualizar el current_semester del alumno
+	updateQuery := `
+		UPDATE alumn
+		SET current_semester = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2;
+	`
+
+	_, err = tx.Exec(ctx, updateQuery, semesterID, alumnoID)
+	if err != nil {
+		return fmt.Errorf("error al actualizar el semestre actual del alumno: %w", err)
 	}
 
 	// Confirmar la transacción
