@@ -487,3 +487,37 @@ func (s *PgxStorage) GetAlumnIDBySemesterCourseID(ctx context.Context, semesterC
 	`
 	return s.DbPool.QueryRow(ctx, query, semesterCourseID).Scan(alumnID)
 }
+
+func (s *PgxStorage) GetCatSemesters(ctx context.Context) ([]models.CatSemester, error) {
+	query := `
+		SELECT 
+			id, 
+			name, 
+			created_at, 
+			updated_at
+		FROM cat_semesters
+		ORDER BY id ASC
+	`
+
+	rows, err := s.DbPool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener semestres: %w", err)
+	}
+	defer rows.Close()
+
+	var semesters []models.CatSemester
+	for rows.Next() {
+		var semester models.CatSemester
+		if err := rows.Scan(
+			&semester.ID,
+			&semester.Name,
+			&semester.CreatedAt,
+			&semester.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("error al procesar los semestres: %w", err)
+		}
+		semesters = append(semesters, semester)
+	}
+
+	return semesters, nil
+}

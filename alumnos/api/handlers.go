@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 )
 
 type API struct {
@@ -250,24 +249,43 @@ func (api *API) GetPendingGradesHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (api *API) GetSemesterCoursesByAlumnId(w http.ResponseWriter, r *http.Request) {
-	alumnIDStr := r.URL.Query().Get("alumn_id")
-	if alumnIDStr == "" {
-		http.Error(w, "alumn_id es requerido", http.StatusBadRequest)
+	// Decodificar el cuerpo de la solicitud
+	var input struct {
+		AlumnID int `json:"alumn_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, fmt.Sprintf("Error al decodificar la solicitud: %v", err), http.StatusBadRequest)
 		return
 	}
 
-	alumnID, err := strconv.Atoi(alumnIDStr)
-	if err != nil {
-		http.Error(w, "alumn_id inválido", http.StatusBadRequest)
+	// Validar que el AlumnID sea válido
+	if input.AlumnID <= 0 {
+		http.Error(w, "El campo 'alumn_id' debe ser un número positivo", http.StatusBadRequest)
 		return
 	}
 
-	courses, err := api.Repo.GetSemesterCoursesByAlumnId(r.Context(), alumnID)
+	// Obtener courses por AlumnID desde el repositorio
+	courses, err := api.Repo.GetSemesterCoursesByAlumnId(r.Context(), input.AlumnID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error al obtener courses: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	// Responder con JSON
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(courses)
+}
+
+func (api *API) GetCatSemesters(w http.ResponseWriter, r *http.Request) {
+	semesters, err := api.Repo.GetCatSemesters(r.Context())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al obtener semestres: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(semesters)
 }
