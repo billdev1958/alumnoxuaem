@@ -89,3 +89,27 @@ FOREIGN KEY (semester_course_id) REFERENCES semester_course(id) ON DELETE CASCAD
 ALTER TABLE alumn 
 ADD CONSTRAINT fk_current_semester_alumn_id
 FOREIGN KEY (current_semester) REFERENCES cat_semesters(id);
+
+CREATE OR REPLACE FUNCTION update_final_grade()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (SELECT COUNT(*) FROM partial_grades
+        WHERE semester_course_id = NEW.semester_course_id) = 2 THEN
+        
+        UPDATE semester_course
+        SET final_grade = (
+            SELECT AVG(grade)
+            FROM partial_grades
+            WHERE semester_course_id = NEW.semester_course_id
+        )
+        WHERE id = NEW.semester_course_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER calculate_final_grade
+AFTER INSERT OR UPDATE ON partial_grades
+FOR EACH ROW
+EXECUTE FUNCTION update_final_grade();
