@@ -66,3 +66,12 @@ type CatSemester struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+type SemesterGrades struct {
+	ID                 int       `json:"id"`                   // ID único del registro
+	AlumnID            int       `json:"alumn_id"`             // ID del alumno
+	SemesterID         int       `json:"semester_id"`          // ID del semestre
+	FinalSemesterGrade float64   `json:"final_semester_grade"` // Promedio final del semestre
+	CreatedAt          time.Time `json:"created_at"`           // Fecha de creación del registro
+	UpdatedAt          time.Time `json:"updated_at"`           // Última fecha de actualización
+}

@@ -27,4 +27,5 @@ func RegisterRoutes(mux *http.ServeMux, apiInstance *API) {
 
 	mux.Handle("GET /v1/semesters", http.HandlerFunc(apiInstance.GetCatSemesters))
 
+	mux.Handle("POST /v1/completed-semesters", http.HandlerFunc(apiInstance.GetCompletedSemesters))
 }

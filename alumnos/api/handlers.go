@@ -289,3 +289,33 @@ func (api *API) GetCatSemesters(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(semesters)
 }
+
+func (api *API) GetCompletedSemesters(w http.ResponseWriter, r *http.Request) {
+	// Decodificar el cuerpo de la solicitud
+	var input struct {
+		AlumnID int `json:"alumn_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, fmt.Sprintf("Error al decodificar la solicitud: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Validar que el AlumnID sea válido
+	if input.AlumnID <= 0 {
+		http.Error(w, "El campo 'alumn_id' debe ser un número positivo", http.StatusBadRequest)
+		return
+	}
+
+	// Obtener los semestres completados desde el repositorio
+	completedSemesters, err := api.Repo.GetCompletedSemesters(r.Context(), input.AlumnID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al obtener semestres completados: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Responder con JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(completedSemesters)
+}

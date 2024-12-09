@@ -543,3 +543,29 @@ func (s *PgxStorage) GetCatSemesters(ctx context.Context) ([]models.CatSemester,
 
 	return semesters, nil
 }
+
+func (s *PgxStorage) GetCompletedSemesters(ctx context.Context, alumnID int) ([]models.SemesterGrades, error) {
+	query := `
+		SELECT sg.semester_id, sg.final_semester_grade
+		FROM semester_grades sg
+		WHERE sg.alumn_id = $1 AND sg.final_semester_grade IS NOT NULL;
+	`
+
+	rows, err := s.DbPool.Query(ctx, query, alumnID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener semestres completados: %w", err)
+	}
+	defer rows.Close()
+
+	var completedSemesters []models.SemesterGrades
+	for rows.Next() {
+		var sg models.SemesterGrades
+		err := rows.Scan(&sg.SemesterID, &sg.FinalSemesterGrade)
+		if err != nil {
+			return nil, fmt.Errorf("error al escanear semestres completados: %w", err)
+		}
+		completedSemesters = append(completedSemesters, sg)
+	}
+
+	return completedSemesters, nil
+}
